@@ -16,22 +16,33 @@ spec:
       port: 80
       targetPort: 80
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: wordpress-pod
+  name: wordpress-deployment
   namespace: wordpress-namespace
-  labels:
-    app: wordpress
 spec:
-  containers:
-    - name: wordpress-container
-      image: wordpress:latest
-      ports:
-        - containerPort: 80
-      envFrom:
-        - configMapRef:
-            name: wordpress-config
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress
+  template:
+    metadata:
+      labels:
+        app: wordpress
+    spec:
+      containers:
+        - name: wordpress-container
+          image: wordpress:latest
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: wordpress-config
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -57,22 +68,45 @@ spec:
       port: 3306
       targetPort: 3306
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
-  name: mysql-pod
+  name: mysql-statefulset
   namespace: wordpress-namespace
-  labels:
-    app: mysql
 spec:
-  containers:
-    - name: mysql-container
-      image: mysql:5.7
-      ports:
-        - containerPort: 3306
-      envFrom:
-        - configMapRef:
-            name: mysql-config
+  serviceName: mysql-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql-container
+          image: mysql:5.7
+          ports:
+            - containerPort: 3306
+          envFrom:
+            - configMapRef:
+                name: mysql-config
+          resources:
+            limits:
+              memory: "1024Mi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-persistent-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: ConfigMap
