@@ -4,4 +4,6 @@ minikube dashboard
 kubectl apply -f manifest.yaml  
 kubectl get ingress -n wordpress-namespace  
 minikube tunnel  
-minikube delete --all  
+minikube delete --all
+
+kubectl exec -it <pod-name> -n <namespace> -- bash
